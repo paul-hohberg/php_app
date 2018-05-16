@@ -1,5 +1,5 @@
 class php_app::apache (
-  $url = $ims_php_app::params::url
+  $url = $php_app::params::url
   )
   inherits php_app::params {
   class { '::apache':
@@ -35,7 +35,7 @@ class php_app::apache (
     package_name => 'php',
     path         => '/etc/httpd/modules/libphp7.so',
     php_version  => '7',
-    source       => 'puppet:///modules/ims_php_app/php.conf'
+    source       => 'puppet:///modules/php_app/php.conf'
   }
   apache::vhost { '_default_80':
     port    => '80',
@@ -89,7 +89,7 @@ class php_app::apache (
     mode   => '0644',
     owner  => 'root',
     group  => 'root',
-    source => "puppet:///modules/ims_php_app/${url}.crt",
+    source => "puppet:///modules/php_app/${url}.crt",
   }
   file { "/etc/pki/tls/private/${url}.key":
     ensure => present,
@@ -142,7 +142,7 @@ class php_app::apache (
     cwd         => '/usr/bin',
     path        => '/usr/bin',
     refreshonly => true,
-    notify      => Exec['setfacl -Rm g:ims_iamucla_admins:r-x /var/log/shibboleth*']
+    notify      => Exec['setfacl -Rm g:web_admins:r-x /var/log/shibboleth*']
   }
   exec { 'setfacl -Rm g:web_admins:r-x /var/log/shibboleth*':
     cwd         => '/usr/bin',
