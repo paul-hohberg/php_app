@@ -1,0 +1,9 @@
+<%= @logfiles.join(' ') -%> {
+    daily
+    copytruncate
+    rotate 7
+    dateext
+    compress
+    missingok
+    notifempty
+}
