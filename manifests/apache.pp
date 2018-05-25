@@ -87,7 +87,7 @@ class php_app::apache (
   service { 'shibd':
     ensure => true,
     enable => true,
-    notify => Exec['setfacl -Rdm g:ims_iamucla_admins:r-x /var/log/shibboleth*']
+    notify => Exec['setfacl -Rdm g:admins:r-x /var/log/shibboleth*']
   }
   file { '/etc/shibboleth/inc-md-cert.pem':
     ensure => present,
@@ -113,13 +113,13 @@ class php_app::apache (
     source => 'puppet:///modules/ims_thor/testshib-two-metadata.shbqa.xml',
     before => File['/etc/shibboleth/shibboleth2.xml']
   }
-  exec { 'setfacl -Rdm g:ims_iamucla_admins:r-x /var/log/shibboleth*':
+  exec { 'setfacl -Rdm g:admins:r-x /var/log/shibboleth*':
     cwd         => '/usr/bin',
     path        => '/usr/bin',
     refreshonly => true,
-    notify      => Exec['setfacl -Rm g:ims_iamucla_admins:r-x /var/log/shibboleth*']
+    notify      => Exec['setfacl -Rm g:admins:r-x /var/log/shibboleth*']
   }
-  exec { 'setfacl -Rm g:ims_iamucla_admins:r-x /var/log/shibboleth*':
+  exec { 'setfacl -Rm g:admins:r-x /var/log/shibboleth*':
     cwd         => '/usr/bin',
     path        => '/usr/bin',
     refreshonly => true

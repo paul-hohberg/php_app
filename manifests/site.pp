@@ -58,16 +58,16 @@ class php_app::site (
     ensure => directory,
     mode   => '0770',
     owner  => 'root',
-    group  => 'ims_iamucla_admins',
-    notify => Exec["setfacl -Rdm g:ims_iamucla_admins:rwx ${paramsdir}"]
+    group  => 'admins',
+    notify => Exec["setfacl -Rdm g:admins:rwx ${paramsdir}"]
   }
-  exec { "setfacl -Rdm g:ims_iamucla_admins:rwx ${paramsdir}":
+  exec { "setfacl -Rdm g:admins:rwx ${paramsdir}":
     cwd         => '/usr/bin',
     path        => '/usr/bin',
     refreshonly => true,
-    notify      => Exec["setfacl -Rm g:ims_iamucla_admins:rwx ${paramsdir}"]
+    notify      => Exec["setfacl -Rm g:admins:rwx ${paramsdir}"]
   }
-  exec { "setfacl -Rm g:ims_iamucla_admins:rwx ${paramsdir}":
+  exec { "setfacl -Rm g:admins:rwx ${paramsdir}":
     cwd         => '/usr/bin',
     path        => '/usr/bin',
     refreshonly => true
