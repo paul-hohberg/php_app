@@ -14,7 +14,6 @@ class php_app::php (
     'php-pecl-apcu',
     'php-pecl-redis',
     'php-pdo',
-    'php-sqlsrv',
     'php-devel',
     'unixODBC-devel'
   ]
@@ -36,7 +35,7 @@ class php_app::php (
   }
   package { $pkgs:
     ensure => present,
-    before => Yumrepo['mssql-release'] 
+    before => Yumrepo['mssql-release']
   }
   yumrepo { 'mssql-release':
     name     => 'mssql-release',
@@ -45,13 +44,17 @@ class php_app::php (
     enabled  => 1,
     gpgcheck => 1,
     gpgkey   => 'https://packages.microsoft.com/keys/microsoft.asc',
-    notify   => Exec['install msodbcsql17 mssql-tools']
+    notify   => Exec['install msodbcsql mssql-tools']
   }
-  exec { 'install msodbcsql17 mssql-tools':
-    command     => '/bin/yum -y install msodbcsql17 mssql-tools',
+  exec { 'install msodbcsql mssql-tools':
+    command     => '/bin/yum -y install msodbcsql mssql-tools',
     cwd         => '/bin',
     environment => "ACCEPT_EULA=Y",
     refreshonly => true,
+  }
+  package { 'php-sqlsrv':
+    ensure  => present,
+    require => Exec['install msodbcsql mssql-tools']
   }
   file_line { 'php_ini_timezone':
     ensure             => present,
