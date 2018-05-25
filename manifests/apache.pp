@@ -1,3 +1,7 @@
+## This class configures apache with php and https ##
+## The SSL cert and private key must exist on the host at ##
+## /etc/pki/tls/private/$url.key and ##
+## /etc/pki/tls/certs/$url.crt prior to running ##
 class php_app::apache (
   $url = $php_app::params::url
   )
@@ -46,8 +50,8 @@ class php_app::apache (
   }
   apache::vhost { "${url}-443":
     port          => '443',
-    servername    => "${url}",
-    serveraliases => ["${fqdn}",],
+    servername    => $url,
+    serveraliases => [$::fqdn,],
     docroot       => '/var/www/html/root',
     options       => [ 'FollowSymLinks', 'MultiViews' ],
     directories   => [
@@ -56,47 +60,10 @@ class php_app::apache (
         allow_override  => ['All'],
       },
     ],
-    custom_fragment => '
-      <Location /Shibboleth.sso>
-        RewriteCond %{REQUEST_URI}/Shibboleth.sso/?(.*) -U
-        RewriteRule .? - [L]
-        AuthType None
-        Require all granted
-      </Location>
-      <IfModule mod_alias.c>
-        <Location /shibboleth-sp>
-          AuthType None
-          Require all granted
-        </Location>
-        Alias /shibboleth-sp/main.css /usr/share/shibboleth/main.css
-      </IfModule>
-      <Location />
-        AuthType Shibboleth
-        ShibRequestSetting requireSession 1
-        ShibUseHeaders On
-        Require valid-user
-      </Location>
-      <Location /#>
-        RewriteEngine On
-        RewriteRule .? %{ENV:BASE}/app.php [L]
-      </Location>',
+    custom_fragment => template("php_app/shibfrag.${url}.erb"),
     ssl             => true,
     ssl_cert        => "/etc/pki/tls/certs/${url}.crt",
     ssl_key         => "/etc/pki/tls/private/${url}.key",
-  }
-  file { "/etc/pki/tls/certs/${url}.crt":
-    ensure => present,
-    mode   => '0644',
-    owner  => 'root',
-    group  => 'root',
-    source => "puppet:///modules/php_app/${url}.crt",
-  }
-  file { "/etc/pki/tls/private/${url}.key":
-    ensure => present,
-    mode   => '0640',
-    owner  => 'root',
-    group  => 'root',
-    source => "/opt/etc/php_app/${url}.key",
   }
   file { '/etc/pki/tls/certs/intermediates.crt':
     ensure => present,
@@ -106,9 +73,9 @@ class php_app::apache (
     source => 'puppet:///modules/php_app/intermediates.crt',
   }
   yumrepo { 'security_shibboleth':
+    ensure   => present,
     name     => 'security_shibboleth',
     descr    => "Shibboleth ${::operatingsystem}_${::operatingsystemmajrelease}",
-    ensure   => present,
     baseurl  => "http://downloadcontent.opensuse.org/repositories/security:/shibboleth/${::operatingsystem}_${::operatingsystemmajrelease}/",
     gpgcheck => '1',
     gpgkey   => "http://downloadcontent.opensuse.org/repositories/security:/shibboleth/${::operatingsystem}_${::operatingsystemmajrelease}/repodata/repomd.xml.key",
@@ -138,13 +105,21 @@ class php_app::apache (
     content => template("php_app/shibboleth2.xml.${environment}.erb"),
     notify  => Service['shibd']
   }
-  exec { 'setfacl -Rdm g:web_admins:r-x /var/log/shibboleth*':
+  file { '/etc/shibboleth/testshib-two-metadata.shbqa.xml':
+    ensure => present,
+    owner  => 'root',
+    group  => 'root',
+    mode   => '0644',
+    source => 'puppet:///modules/ims_thor/testshib-two-metadata.shbqa.xml',
+    before => File['/etc/shibboleth/shibboleth2.xml']
+  }
+  exec { 'setfacl -Rdm g:ims_iamucla_admins:r-x /var/log/shibboleth*':
     cwd         => '/usr/bin',
     path        => '/usr/bin',
     refreshonly => true,
-    notify      => Exec['setfacl -Rm g:web_admins:r-x /var/log/shibboleth*']
+    notify      => Exec['setfacl -Rm g:ims_iamucla_admins:r-x /var/log/shibboleth*']
   }
-  exec { 'setfacl -Rm g:web_admins:r-x /var/log/shibboleth*':
+  exec { 'setfacl -Rm g:ims_iamucla_admins:r-x /var/log/shibboleth*':
     cwd         => '/usr/bin',
     path        => '/usr/bin',
     refreshonly => true

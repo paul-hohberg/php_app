@@ -1,5 +1,5 @@
-class ims_php_app {
-  class{'ims_php_app::php': }
-  class{'ims_php_app::apache': }
-  class{'ims_php_app::site': }
+class php_app {
+  class{'php_app::php': }
+  class{'php_app::apache': }
+  class{'php_app::site': }
 }

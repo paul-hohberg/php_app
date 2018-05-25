@@ -5,18 +5,18 @@ class php_app::site (
   $rev             = $php_app::params::rev,
   $target          = $php_app::params::target,
   $specialdirs     = $php_app::params::specialdirs,
-  $paramsfile      = $php_app::params::paramsfile,
+  $paramsdir       = $php_app::params::paramsdir,
   $logfiles        = $php_app::params::logfiles
   )
   inherits php_app::params {
-  file { "/usr/share/httpd/.ssh":
+  file { '/usr/share/httpd/.ssh':
     ensure => 'directory',
     owner  => apache,
     group  => apache,
     mode   => '0600',
   }
   file { '/usr/share/httpd/.ssh/id_rsa':
-    source  => '/home/phohberg/deploy.key',
+    source  => "${paramsdir}/deploy.key",
     owner   => apache,
     group   => apache,
     mode    => '0600',
@@ -25,11 +25,11 @@ class php_app::site (
     owner   => apache,
     group   => apache,
     mode    => '0640',
-    replace => false,
-    content => "github.com,192.30.255.112,192.30.255.113 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==\n",
+    replace => true,
+    source  => 'puppet:///modules/php_app/known_hosts.txt'
   }
   file { $target:
-    ensure  => "directory",
+    ensure  => directory,
     owner   => 'apache',
     group   => 'apache',
     mode    => '0774',
@@ -43,7 +43,8 @@ class php_app::site (
     depth       => '1',
     require     => [
                    Package['git'],
-                   File["/usr/share/httpd/.ssh/id_rsa"],
+                   File['/usr/share/httpd/.ssh/id_rsa'],
+                   File['/usr/share/httpd/.ssh/known_hosts'],
                    File[$target]
                    ],
   }
@@ -53,11 +54,29 @@ class php_app::site (
     target => "${target}/web",
     require => Vcsrepo[$target],
   }
+  file { $paramsdir:
+    ensure => directory,
+    mode   => '0770',
+    owner  => 'root',
+    group  => 'ims_iamucla_admins',
+    notify => Exec["setfacl -Rdm g:ims_iamucla_admins:rwx ${paramsdir}"]
+  }
+  exec { "setfacl -Rdm g:ims_iamucla_admins:rwx ${paramsdir}":
+    cwd         => '/usr/bin',
+    path        => '/usr/bin',
+    refreshonly => true,
+    notify      => Exec["setfacl -Rm g:ims_iamucla_admins:rwx ${paramsdir}"]
+  }
+  exec { "setfacl -Rm g:ims_iamucla_admins:rwx ${paramsdir}":
+    cwd         => '/usr/bin',
+    path        => '/usr/bin',
+    refreshonly => true
+  }
   file { "${target}/app/config/parameters.yml":
     mode => '0440',
     owner => 'apache',
     group => 'apache',
-    source => $paramsfile,
+    source => "${paramsdir}/parameters.yml",
     require => Vcsrepo[$target],
     notify => Exec['cache-clear']
   }
@@ -85,8 +104,8 @@ class php_app::site (
     ensure => present,
   }
   exec { 'cache-clear':
-    command     => "/usr/bin/php ${target}/bin/console cache:clear -e=prod && 
-                    /usr/bin/php ${target}/bin/console cache:warmup -e=prod",
+    command     => "/usr/bin/php ${target}/bin/console cache:clear --env=prod && 
+                    /usr/bin/php ${target}/bin/console cache:warmup --env=prod",
     cwd         => "${target}/bin",
     user        => 'apache',
     refreshonly => true,
